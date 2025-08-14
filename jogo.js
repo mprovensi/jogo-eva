@@ -33,6 +33,11 @@ const html = `<!DOCTYPE html>
 </head>
 <body>
 	<button id="restartBtn">Reiniciar</button>
+	<button id="jumpBtn" style="position: absolute; bottom: 40px; right: 40px; width: 70px; height: 70px; border-radius: 50%; background: #2ecc40; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; z-index: 20; cursor: pointer;">
+		<svg width="40" height="40" viewBox="0 0 40 40">
+			<polygon points="20,8 32,28 8,28" fill="#fff" />
+		</svg>
+	</button>
 	<canvas id="gameCanvas"></canvas>
 	<script>
 		const canvas = document.getElementById('gameCanvas');
@@ -49,8 +54,8 @@ const html = `<!DOCTYPE html>
 		const player = {
 			x: 80,
 			y: 0, // será ajustado após groundY
-			width: 40,
-			height: 70,
+			width: 70,
+			height: 120,
 			color: '#2ecc40', // roupa verde
 			hair: '#8B4513', // cabelo marrom
 			speed: 6,
@@ -58,59 +63,25 @@ const html = `<!DOCTYPE html>
 			jumping: false
 		};
 		let groundY = canvas.height - 100;
-		player.y = groundY + 30 - player.height;
+	const offsetY = 12;
+	player.y = groundY + 30 - player.height + offsetY;
 
 		// Obstáculos
 		let obstacles = [];
 		let obstacleTimer = 0;
 
 		// Imagem da cabeça
-		const headImg = new Image();
-		headImg.src = 'cabeca.png';
+	// Imagem do dinossauro
+	const dinoImg = new Image();
+	dinoImg.src = 'dinossauro.png';
 
 		function drawPlayer() {
-			// Tronco
-			ctx.fillStyle = player.color;
-			ctx.fillRect(player.x + 8, player.y + 20, player.width - 16, player.height - 30);
-			ctx.strokeStyle = '#000';
-			ctx.lineWidth = 2;
-			ctx.strokeRect(player.x + 8, player.y + 20, player.width - 16, player.height - 30);
-
-			// Pernas
-			ctx.lineWidth = 4;
-			ctx.strokeStyle = '#222';
-			// Perna esquerda
-			ctx.beginPath();
-			ctx.moveTo(player.x + 14, player.y + player.height - 10);
-			ctx.lineTo(player.x + 14, player.y + player.height + 15);
-			ctx.stroke();
-			// Perna direita
-			ctx.beginPath();
-			ctx.moveTo(player.x + player.width - 14, player.y + player.height - 10);
-			ctx.lineTo(player.x + player.width - 14, player.y + player.height + 15);
-			ctx.stroke();
-
-			// Braços
-			ctx.lineWidth = 4;
-			ctx.strokeStyle = '#222';
-			// Braço esquerdo
-			ctx.beginPath();
-			ctx.moveTo(player.x + 8, player.y + 35);
-			ctx.lineTo(player.x - 10, player.y + 55);
-			ctx.stroke();
-			// Braço direito
-			ctx.beginPath();
-			ctx.moveTo(player.x + player.width - 8, player.y + 35);
-			ctx.lineTo(player.x + player.width + 10, player.y + 55);
-			ctx.stroke();
-
-			// Cabeça (mais próxima do corpo)
-			const headY = player.y - 16; // aproximar da parte superior do tronco
-			if (headImg.complete) {
-				ctx.drawImage(headImg, player.x + player.width / 2 - 18, headY, 36, 36);
+			// Desenha o dinossauro
+			if (dinoImg.complete) {
+				ctx.drawImage(dinoImg, player.x, player.y, player.width, player.height);
 			} else {
-				headImg.onload = function() {
-					ctx.drawImage(headImg, player.x + player.width / 2 - 18, headY, 36, 36);
+				dinoImg.onload = function() {
+					ctx.drawImage(dinoImg, player.x, player.y, player.width, player.height);
 				};
 			}
 		}
@@ -123,7 +94,85 @@ const html = `<!DOCTYPE html>
 		}
 
 		function clearCanvas() {
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			// Fundo pôr do sol
+			const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+			grad.addColorStop(0, '#ffb347'); // laranja claro
+			grad.addColorStop(0.5, '#ffcc80'); // amarelo
+			grad.addColorStop(1, '#6b4f1d'); // marrom escuro
+			ctx.fillStyle = grad;
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Sol estático
+			const sunX = canvas.width / 2;
+			const sunY = canvas.height / 2 - 160;
+			// Sol
+			ctx.beginPath();
+			ctx.arc(sunX, sunY, 60, 0, Math.PI * 2);
+			ctx.fillStyle = '#fff700';
+			ctx.globalAlpha = 0.85;
+			ctx.fill();
+			ctx.globalAlpha = 1;
+
+			// Nuvens na frente do sol
+			function drawCloud(cx, cy, scale = 1) {
+				ctx.save();
+				ctx.globalAlpha = 0.8;
+				ctx.fillStyle = '#fff';
+				ctx.beginPath();
+				ctx.arc(cx, cy, 28 * scale, Math.PI * 0.7, Math.PI * 2.3);
+				ctx.arc(cx + 22 * scale, cy, 22 * scale, Math.PI * 0.5, Math.PI * 2.5);
+				ctx.arc(cx + 40 * scale, cy + 8 * scale, 16 * scale, Math.PI * 0.5, Math.PI * 2.5);
+				ctx.arc(cx + 16 * scale, cy + 16 * scale, 18 * scale, Math.PI * 0.5, Math.PI * 2.5);
+				ctx.closePath();
+				ctx.fill();
+				ctx.restore();
+			}
+			// Mais nuvens na frente do sol
+			drawCloud(sunX + 120, sunY + 80, 1.1);
+			drawCloud(sunX - 60, sunY + 60, 1.2);
+			drawCloud(sunX - 40, sunY + 60, 0.8);
+			drawCloud(sunX - 10, sunY + 30, 0.7);
+			drawCloud(sunX - 100, sunY +40, 1.2);
+			drawCloud(sunX + 50, sunY - 8, 0.8);
+			drawCloud(sunX + 100, sunY + 40, 0.7);
+			drawCloud(sunX + 35, sunY + 28, 0.6);
+			drawCloud(sunX - 25, sunY + 18, 0.8);
+
+			// Floresta (árvores simples)
+			// Árvores paralaxe variadas e densas
+			const treeCount = 22;
+			if (!window.trees) {
+				window.trees = [];
+				for (let i = 0; i < treeCount; i++) {
+					const size = 24 + Math.random() * 92;
+					const trunkHeight = size * 1.2;
+					window.trees.push({
+						x: Math.random() * canvas.width,
+						y: groundY - 90,
+						size,
+						trunkHeight
+					});
+				}
+			}
+			// Ordena as árvores por tamanho (menores atrás, maiores à frente)
+			window.trees.sort((a, b) => a.size - b.size);
+			for (let tree of window.trees) {
+				tree.x -= 1.2;
+				if (tree.x < -tree.size) tree.x = canvas.width + tree.size;
+				// Tronco
+				ctx.fillStyle = '#6b4f1d';
+				ctx.fillRect(tree.x, tree.y, tree.size * 0.5, tree.trunkHeight);
+				// Copa
+				ctx.beginPath();
+				ctx.arc(tree.x + tree.size * 0.25, tree.y, tree.size, 0, Math.PI * 2);
+				ctx.fillStyle = '#228B22';
+				ctx.fill();
+				// Borda fina verde escura
+				ctx.lineWidth = 1;
+				ctx.strokeStyle = '#145214';
+				ctx.stroke();
+			}
+
 			// Desenha o chão
 			ctx.fillStyle = '#888';
 			ctx.fillRect(0, groundY + 30, canvas.width, 30);
@@ -136,7 +185,7 @@ const html = `<!DOCTYPE html>
 				player.vy += 0.9;
 				player.y += player.vy;
 				if (player.y + player.height >= groundY + 30) {
-					player.y = groundY + 30 - player.height;
+					player.y = groundY + 30 - player.height + offsetY;
 					player.vy = 0;
 					player.jumping = false;
 				}
@@ -177,8 +226,8 @@ const html = `<!DOCTYPE html>
 					player.y < obs.y + obs.height
 				) {
 					// Colidiu
-					ctx.font = 'bold 48px Arial';
-					ctx.fillStyle = 'red';
+					ctx.font = 'bold 70px Arial';
+					ctx.fillStyle = '#b74747';
 					ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
 					return true;
 				}
@@ -204,7 +253,7 @@ const html = `<!DOCTYPE html>
 			// Resetar variáveis do jogo
 			player.x = 80;
 			groundY = canvas.height - 100;
-			player.y = groundY + 30 - player.height;
+			player.y = groundY + 30 - player.height + offsetY;
 			player.vy = 0;
 			player.jumping = false;
 			obstacles = [];
@@ -225,15 +274,15 @@ const html = `<!DOCTYPE html>
 				player.x -= player.speed;
 				if (player.x < 0) player.x = 0;
 			}
-			if ((e.key === ' ' || e.key === 'ArrowUp') && !player.jumping && player.y + player.height === groundY + 30) {
+			if ((e.key === ' ' || e.key === 'ArrowUp') && !player.jumping && player.y + player.height >= groundY + 30) {
 				player.vy = -25;
 				player.jumping = true;
 			}
 		});
 
-		// Permite pular ao clicar na tela
-		document.addEventListener('click', function() {
-			if (!player.jumping && player.y + player.height === groundY + 30) {
+		// Permite pular ao clicar no botão
+		document.getElementById('jumpBtn').addEventListener('click', function() {
+			if (!player.jumping && player.y + player.height >= groundY + 30) {
 				player.vy = -25;
 				player.jumping = true;
 			}
