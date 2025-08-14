@@ -40,7 +40,9 @@ const html = `<!DOCTYPE html>
 	</button>
 	<canvas id="gameCanvas"></canvas>
 	<script>
-	let jumpScore = 0;
+		let jumpScore = 0;
+		let groundHeight = 200;
+
 		const canvas = document.getElementById('gameCanvas');
 		const ctx = canvas.getContext('2d');
 
@@ -63,9 +65,11 @@ const html = `<!DOCTYPE html>
 			vy: 0,
 			jumping: false
 		};
-		let groundY = canvas.height - 100;
-	const offsetY = 12;
-	player.y = groundY + 30 - player.height + offsetY;
+
+		let groundY = canvas.height - groundHeight;
+
+		const offsetY = 12;
+		player.y = groundY + 30 - player.height + offsetY;
 
 		// Obstáculos
 		let obstacles = [];
@@ -149,7 +153,7 @@ const html = `<!DOCTYPE html>
 					const trunkHeight = size * 1.2;
 					window.trees.push({
 						x: Math.random() * canvas.width,
-						y: groundY - 90,
+						y: groundY - 120,
 						size,
 						trunkHeight
 					});
@@ -176,7 +180,56 @@ const html = `<!DOCTYPE html>
 
 			// Desenha o chão
 			ctx.fillStyle = '#888';
-			ctx.fillRect(0, groundY + 30, canvas.width, 30);
+			ctx.fillRect(0, groundY + 10, canvas.width, 50);
+			// Linha tracejada branca no meio do chão (pista)
+			if (typeof window.dashOffset === 'undefined') window.dashOffset = 0;
+			window.dashOffset += 6; // mesma velocidade dos obstáculos
+			ctx.save();
+			ctx.strokeStyle = '#fff';
+			ctx.lineWidth = 4;
+			ctx.setLineDash([60, 28]);
+			ctx.lineDashOffset = window.dashOffset;
+			ctx.beginPath();
+			ctx.moveTo(0, groundY + 35);
+			ctx.lineTo(canvas.width, groundY + 35);
+			ctx.stroke();
+			ctx.setLineDash([]);
+			ctx.restore();
+
+			// Placa de madeira pendurada no topo
+			ctx.save();
+			ctx.beginPath();
+			ctx.moveTo(canvas.width/2 - 140, 28);
+			ctx.lineTo(canvas.width/2 + 140, 28);
+			ctx.lineTo(canvas.width/2 + 120, 78);
+			ctx.lineTo(canvas.width/2 - 120, 78);
+			ctx.closePath();
+			ctx.fillStyle = '#a97c50';
+			ctx.strokeStyle = '#6b4f1d';
+			ctx.lineWidth = 5;
+			ctx.shadowColor = '#000';
+			ctx.shadowBlur = 10;
+			ctx.fill();
+			ctx.stroke();
+			ctx.shadowBlur = 0;
+			// Corda pendurada
+			ctx.beginPath();
+			ctx.moveTo(canvas.width/2 - 110, 0);
+			ctx.lineTo(canvas.width/2 - 110, 28);
+			ctx.moveTo(canvas.width/2 + 110, 0);
+			ctx.lineTo(canvas.width/2 + 110, 28);
+			ctx.strokeStyle = '#d2b48c';
+			ctx.lineWidth = 5;
+			ctx.stroke();
+			// Texto na placa
+			ctx.font = 'bold 26px "Press Start 2P", Arial, sans-serif';
+			ctx.fillStyle = '#fffbe6';
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+			ctx.shadowColor = '#6b4f1d';
+			ctx.shadowBlur = 3;
+			ctx.fillText('Jogo da Eva', canvas.width/2, 53);
+			ctx.restore();
 		}
 
 		function updatePlayer() {
@@ -192,7 +245,7 @@ const html = `<!DOCTYPE html>
 			ctx.fillStyle = '#222';
 			ctx.textAlign = 'left';
 			ctx.fillText('PONTOS: ' + jumpScore, 24, 48);
-			groundY = canvas.height - 100;
+			groundY = canvas.height - groundHeight;
 			// Gravidade e pulo
 			if (player.y + player.height < groundY + 30 || player.jumping) {
 				player.vy += 0.9;
@@ -218,7 +271,7 @@ const html = `<!DOCTYPE html>
 				const gravity = 0.9;
 				const maxJumpHeight = Math.floor((jumpVelocity * jumpVelocity) / (2 * gravity));
 				const minHeight = 30;
-				const maxHeight = Math.floor(maxJumpHeight * 0.5); // altura máxima dos obstáculos reduzida
+				const maxHeight = Math.floor(maxJumpHeight * 0.6); // altura máxima dos obstáculos reduzida
 				const obsHeight = minHeight + Math.floor(Math.random() * (maxHeight - minHeight + 1));
 				obstacles.push({
 					x: canvas.width,
@@ -239,10 +292,16 @@ const html = `<!DOCTYPE html>
 					player.y < obs.y + obs.height
 				) {
 					// Colidiu
-					ctx.font = 'bold 70px Arial';
-					ctx.fillStyle = '#b74747';
+					ctx.save();
+					ctx.font = 'bold 80px "Press Start 2P", Arial, sans-serif';
 					ctx.textAlign = 'center';
+					ctx.textBaseline = 'middle';
+					// Texto branco com sombra preta
+					ctx.fillStyle = '#f21414ff';
+					ctx.shadowColor = '#000';
+					ctx.shadowBlur = 8;
 					ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+					ctx.restore();
 					jumpScore = 0;
 					return true;
 				}
@@ -267,7 +326,7 @@ const html = `<!DOCTYPE html>
 		function restartGame() {
 			// Resetar variáveis do jogo
 			player.x = 80;
-			groundY = canvas.height - 100;
+			groundY = canvas.height - groundHeight;
 			player.y = groundY + 30 - player.height + offsetY;
 			player.vy = 0;
 			player.jumping = false;
