@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<title>Jogo do Pulo</title>
+	<style>
+		body { margin: 0; overflow: hidden; }
+		canvas { background: #cceeff; display: block; margin: 0 auto; }
+	</style>
+</head>
+<body>
+	<canvas id="gameCanvas" width="800" height="400"></canvas>
+	<script>
+		const canvas = document.getElementById('gameCanvas');
+		const ctx = canvas.getContext('2d');
+
+		// Personagem
+		const player = {
+			x: 80,
+			y: canvas.height - 100,
+			width: 40,
+			height: 70,
+			color: '#2ecc40', // roupa verde
+			hair: '#8B4513', // cabelo marrom
+			speed: 6,
+			vy: 0,
+			jumping: false
+		};
+		const groundY = canvas.height - 100;
+
+		// Obstáculos
+		let obstacles = [];
+		let obstacleTimer = 0;
+
+		// Imagem da cabeça
+		const headImg = new Image();
+		headImg.src = 'cabeca.png';
+
+		function drawPlayer() {
+			// Corpo (roupa verde)
+			ctx.fillStyle = player.color;
+			ctx.fillRect(player.x, player.y, player.width, player.height);
+			ctx.strokeStyle = '#000';
+			ctx.lineWidth = 2;
+			ctx.strokeRect(player.x, player.y, player.width, player.height);
+			
+			// Cabeça
+			if (headImg.complete) {
+				ctx.drawImage(headImg, player.x + player.width / 2 - 18, player.y - 36, 36, 36);
+			} else {
+				headImg.onload = function() {
+					ctx.drawImage(headImg, player.x + player.width / 2 - 18, player.y - 36, 36, 36);
+				};
+			}
+			
+		}
+
+		function drawObstacle(obs) {
+			ctx.fillStyle = '#555';
+			ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+			ctx.strokeStyle = '#222';
+			ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+		}
+
+		function clearCanvas() {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+		}
+
+		function updatePlayer() {
+			// Gravidade e pulo
+			if (player.y < groundY || player.jumping) {
+				player.vy += 1.3;
+				player.y += player.vy;
+				if (player.y >= groundY) {
+					player.y = groundY;
+					player.vy = 0;
+					player.jumping = false;
+				}
+			}
+		}
+
+		function updateObstacles() {
+			for (let obs of obstacles) {
+				obs.x -= 6;
+			}
+			obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+			// Gera novo obstáculo
+			obstacleTimer--;
+			if (obstacleTimer <= 0) {
+				obstacles.push({
+					x: canvas.width,
+					y: groundY + 30,
+					width: 30,
+					height: 40
+				});
+				obstacleTimer = 80 + Math.floor(Math.random() * 60);
+			}
+		}
+
+		function checkCollision() {
+			for (let obs of obstacles) {
+				if (
+					player.x < obs.x + obs.width &&
+					player.x + player.width > obs.x &&
+					player.y + player.height > obs.y &&
+					player.y < obs.y + obs.height
+				) {
+					// Colidiu
+					ctx.font = 'bold 48px Arial';
+					ctx.fillStyle = 'red';
+					ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		function gameLoop() {
+			clearCanvas();
+			updatePlayer();
+			updateObstacles();
+			drawPlayer();
+			for (let obs of obstacles) drawObstacle(obs);
+			if (!checkCollision()) {
+				requestAnimationFrame(gameLoop);
+			}
+		}
+
+		document.addEventListener('keydown', function(e) {
+			if (e.key === 'ArrowRight') {
+				player.x += player.speed;
+				if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+			}
+			if (e.key === 'ArrowLeft') {
+				player.x -= player.speed;
+				if (player.x < 0) player.x = 0;
+			}
+			if ((e.key === ' ' || e.key === 'ArrowUp') && !player.jumping && player.y === groundY) {
+				player.vy = -20;
+				player.jumping = true;
+			}
+		});
+
+		gameLoop();
+	</script>
+</body>
+</html>
