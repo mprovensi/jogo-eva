@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<title>Eva Provensi</title>
+	<style>
+		body { margin: 0; overflow: hidden; }
+		canvas { background: #cceeff; display: block; margin: 0 auto; }
+	</style>
+	</head>
+	<body>
+		<canvas id="gameCanvas" width="800" height="400"></canvas>
+		<script>
+			const canvas = document.getElementById('gameCanvas');
+	const ctx = canvas.getContext('2d');
+
+	const eva = {
+		x: 50,
+		y: canvas.height - 100,
+		width: 50,
+		height: 80,
+			color: '#ff69b4',
+		speed: 5,
+		vy: 0,
+		jumping: false
+	};
+	const groundY = canvas.height - 100;
+
+	function drawEva() {
+		// Corpo
+		ctx.fillStyle = eva.color;
+		ctx.fillRect(eva.x, eva.y, eva.width, eva.height);
+		ctx.strokeStyle = '#000';
+		ctx.lineWidth = 3;
+		ctx.strokeRect(eva.x, eva.y, eva.width, eva.height);
+		// Cabeça
+		ctx.beginPath();
+		ctx.arc(eva.x + eva.width / 2, eva.y - 20, 20, 0, Math.PI * 2);
+		ctx.fillStyle = '#ffe0bd';
+		ctx.fill();
+		ctx.strokeStyle = '#000';
+		ctx.lineWidth = 3;
+		ctx.stroke();
+			}
+
+			function clearCanvas() {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+			}
+
+			function gameLoop() {
+	clearCanvas();
+	updateEva();
+	drawEva();
+	requestAnimationFrame(gameLoop);
+	}
+
+	document.addEventListener('keydown', function(e) {
+				if (e.key === 'ArrowRight') {
+					eva.x += eva.speed;
+					if (eva.x + eva.width > canvas.width) eva.x = canvas.width - eva.width;
+				}
+				if (e.key === 'ArrowLeft') {
+					eva.x -= eva.speed;
+					if (eva.x < 0) eva.x = 0;
+				}
+				if ((e.key === ' ' || e.key === 'ArrowUp') && !eva.jumping && eva.y === groundY) {
+					eva.vy = -18;
+					eva.jumping = true;
+				}
+			});
+
+			function updateEva() {
+				// Aplica gravidade e pulo
+				if (eva.y < groundY || eva.jumping) {
+					eva.vy += 1.2; // gravidade
+					eva.y += eva.vy;
+					if (eva.y >= groundY) {
+						eva.y = groundY;
+						eva.vy = 0;
+						eva.jumping = false;
+					}
+				}
+			}
+		</script>
+	</body>
+	</html>
