@@ -32,14 +32,15 @@ const html = `<!DOCTYPE html>
 	</style>
 </head>
 <body>
-	<button id="restartBtn">Reiniciar</button>
-	<button id="jumpBtn" style="position: absolute; bottom: 40px; right: 40px; width: 70px; height: 70px; border-radius: 50%; background: #2ecc40; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; z-index: 20; cursor: pointer;">
+	<button id="restartBtn" style="position: absolute; top: 16px; right: 16px; padding: 10px 22px; min-width: 60px; min-height: 32px; font-size: 18px; background: #2ecc40; color: #fff; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 10; touch-action: manipulation;">Reiniciar</button>
+	<button id="jumpBtn" style="position: absolute; bottom: 6vw; right: 6vw; width: 16vw; height: 16vw; min-width: 70px; min-height: 70px; max-width: 120px; max-height: 120px; border-radius: 50%; background: #2ecc40; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; z-index: 20; cursor: pointer; touch-action: manipulation;">
 		<svg width="40" height="40" viewBox="0 0 40 40">
 			<polygon points="20,8 32,28 8,28" fill="#fff" />
 		</svg>
 	</button>
 	<canvas id="gameCanvas"></canvas>
 	<script>
+	let jumpScore = 0;
 		const canvas = document.getElementById('gameCanvas');
 		const ctx = canvas.getContext('2d');
 
@@ -140,7 +141,7 @@ const html = `<!DOCTYPE html>
 
 			// Floresta (árvores simples)
 			// Árvores paralaxe variadas e densas
-			const treeCount = 22;
+			const treeCount = 15;
 			if (!window.trees) {
 				window.trees = [];
 				for (let i = 0; i < treeCount; i++) {
@@ -179,6 +180,18 @@ const html = `<!DOCTYPE html>
 		}
 
 		function updatePlayer() {
+			// Incrementa o contador se o personagem está pulando e passa por um obstáculo
+			for (let obs of obstacles) {
+				if (!obs.scored && player.x > obs.x + obs.width) {
+					obs.scored = true;
+					if (player.jumping) jumpScore++;
+				}
+			}
+			// Exibe o contador de acertos de pulo
+			ctx.font = 'bold 32px Arial';
+			ctx.fillStyle = '#222';
+			ctx.textAlign = 'left';
+			ctx.fillText('PONTOS: ' + jumpScore, 24, 48);
 			groundY = canvas.height - 100;
 			// Gravidade e pulo
 			if (player.y + player.height < groundY + 30 || player.jumping) {
@@ -228,7 +241,9 @@ const html = `<!DOCTYPE html>
 					// Colidiu
 					ctx.font = 'bold 70px Arial';
 					ctx.fillStyle = '#b74747';
+					ctx.textAlign = 'center';
 					ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+					jumpScore = 0;
 					return true;
 				}
 			}
@@ -281,12 +296,18 @@ const html = `<!DOCTYPE html>
 		});
 
 		// Permite pular ao clicar no botão
-		document.getElementById('jumpBtn').addEventListener('click', function() {
+		function jumpAction() {
 			if (!player.jumping && player.y + player.height >= groundY + 30) {
 				player.vy = -25;
 				player.jumping = true;
 			}
-		});
+		}
+		const jumpBtn = document.getElementById('jumpBtn');
+		jumpBtn.addEventListener('click', jumpAction);
+		jumpBtn.addEventListener('touchstart', function(e) {
+			e.preventDefault();
+			jumpAction();
+		}, {passive: false});
 
 		gameLoop();
 	<\/script>
