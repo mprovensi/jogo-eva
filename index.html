@@ -4,20 +4,50 @@
 	<meta charset="UTF-8">
 	<title>Jogo do Pulo</title>
 	<style>
-		body { margin: 0; overflow: hidden; }
-		canvas { background: #cceeff; display: block; margin: 0 auto; }
+		html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+		body { width: 100vw; height: 100vh; }
+		#gameCanvas {
+			position: absolute;
+			top: 0; left: 0;
+			width: 100vw;
+			height: 100vh;
+			background: #cceeff;
+			display: block;
+		}
+		#restartBtn {
+			position: absolute;
+			top: 20px;
+			right: 20px;
+			z-index: 10;
+			padding: 10px 20px;
+			font-size: 18px;
+			background: #2ecc40;
+			color: #fff;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+		}
 	</style>
 </head>
 <body>
-	<canvas id="gameCanvas" width="800" height="400"></canvas>
+	<button id="restartBtn">Reiniciar</button>
+	<canvas id="gameCanvas"></canvas>
 	<script>
 		const canvas = document.getElementById('gameCanvas');
 		const ctx = canvas.getContext('2d');
 
+		function resizeCanvas() {
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
+		}
+		resizeCanvas();
+		window.addEventListener('resize', resizeCanvas);
+
 		// Personagem
 		const player = {
 			x: 80,
-			y: canvas.height - 100,
+			y: 0, // será ajustado após groundY
 			width: 40,
 			height: 70,
 			color: '#2ecc40', // roupa verde
@@ -26,7 +56,8 @@
 			vy: 0,
 			jumping: false
 		};
-		const groundY = canvas.height - 100;
+		let groundY = canvas.height - 100;
+		player.y = groundY + 30 - player.height;
 
 		// Obstáculos
 		let obstacles = [];
@@ -37,22 +68,50 @@
 		headImg.src = 'cabeca.png';
 
 		function drawPlayer() {
-			// Corpo (roupa verde)
+			// Tronco
 			ctx.fillStyle = player.color;
-			ctx.fillRect(player.x, player.y, player.width, player.height);
+			ctx.fillRect(player.x + 8, player.y + 20, player.width - 16, player.height - 30);
 			ctx.strokeStyle = '#000';
 			ctx.lineWidth = 2;
-			ctx.strokeRect(player.x, player.y, player.width, player.height);
-			
-			// Cabeça
+			ctx.strokeRect(player.x + 8, player.y + 20, player.width - 16, player.height - 30);
+
+			// Pernas
+			ctx.lineWidth = 4;
+			ctx.strokeStyle = '#222';
+			// Perna esquerda
+			ctx.beginPath();
+			ctx.moveTo(player.x + 14, player.y + player.height - 10);
+			ctx.lineTo(player.x + 14, player.y + player.height + 15);
+			ctx.stroke();
+			// Perna direita
+			ctx.beginPath();
+			ctx.moveTo(player.x + player.width - 14, player.y + player.height - 10);
+			ctx.lineTo(player.x + player.width - 14, player.y + player.height + 15);
+			ctx.stroke();
+
+			// Braços
+			ctx.lineWidth = 4;
+			ctx.strokeStyle = '#222';
+			// Braço esquerdo
+			ctx.beginPath();
+			ctx.moveTo(player.x + 8, player.y + 35);
+			ctx.lineTo(player.x - 10, player.y + 55);
+			ctx.stroke();
+			// Braço direito
+			ctx.beginPath();
+			ctx.moveTo(player.x + player.width - 8, player.y + 35);
+			ctx.lineTo(player.x + player.width + 10, player.y + 55);
+			ctx.stroke();
+
+			// Cabeça (mais próxima do corpo)
+			const headY = player.y - 16; // aproximar da parte superior do tronco
 			if (headImg.complete) {
-				ctx.drawImage(headImg, player.x + player.width / 2 - 18, player.y - 36, 36, 36);
+				ctx.drawImage(headImg, player.x + player.width / 2 - 18, headY, 36, 36);
 			} else {
 				headImg.onload = function() {
-					ctx.drawImage(headImg, player.x + player.width / 2 - 18, player.y - 36, 36, 36);
+					ctx.drawImage(headImg, player.x + player.width / 2 - 18, headY, 36, 36);
 				};
 			}
-			
 		}
 
 		function drawObstacle(obs) {
@@ -64,15 +123,19 @@
 
 		function clearCanvas() {
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			// Desenha o chão
+			ctx.fillStyle = '#888';
+			ctx.fillRect(0, groundY + 30, canvas.width, 30);
 		}
 
 		function updatePlayer() {
+			groundY = canvas.height - 100;
 			// Gravidade e pulo
-			if (player.y < groundY || player.jumping) {
-				player.vy += 1.3;
+			if (player.y + player.height < groundY + 30 || player.jumping) {
+				player.vy += 0.9;
 				player.y += player.vy;
-				if (player.y >= groundY) {
-					player.y = groundY;
+				if (player.y + player.height >= groundY + 30) {
+					player.y = groundY + 30 - player.height;
 					player.vy = 0;
 					player.jumping = false;
 				}
@@ -87,11 +150,18 @@
 			// Gera novo obstáculo
 			obstacleTimer--;
 			if (obstacleTimer <= 0) {
+				// Altura máxima do pulo: v^2 / (2 * g)
+				const jumpVelocity = Math.abs(-25);
+				const gravity = 0.9;
+				const maxJumpHeight = Math.floor((jumpVelocity * jumpVelocity) / (2 * gravity));
+				const minHeight = 30;
+				const maxHeight = Math.floor(maxJumpHeight * 0.5); // altura máxima dos obstáculos reduzida
+				const obsHeight = minHeight + Math.floor(Math.random() * (maxHeight - minHeight + 1));
 				obstacles.push({
 					x: canvas.width,
-					y: groundY + 30,
+					y: groundY + 30 - obsHeight,
 					width: 30,
-					height: 40
+					height: obsHeight
 				});
 				obstacleTimer = 80 + Math.floor(Math.random() * 60);
 			}
@@ -115,16 +185,35 @@
 			return false;
 		}
 
+		let gameOver = false;
 		function gameLoop() {
 			clearCanvas();
 			updatePlayer();
 			updateObstacles();
 			drawPlayer();
 			for (let obs of obstacles) drawObstacle(obs);
-			if (!checkCollision()) {
+			if (!checkCollision() && !gameOver) {
 				requestAnimationFrame(gameLoop);
+			} else {
+				gameOver = true;
 			}
 		}
+
+		function restartGame() {
+			// Resetar variáveis do jogo
+			player.x = 80;
+			groundY = canvas.height - 100;
+			player.y = groundY + 30 - player.height;
+			player.vy = 0;
+			player.jumping = false;
+			obstacles = [];
+			obstacleTimer = 0;
+			gameOver = false;
+			clearCanvas();
+			gameLoop();
+		}
+
+		document.getElementById('restartBtn').addEventListener('click', restartGame);
 
 		document.addEventListener('keydown', function(e) {
 			if (e.key === 'ArrowRight') {
@@ -135,8 +224,16 @@
 				player.x -= player.speed;
 				if (player.x < 0) player.x = 0;
 			}
-			if ((e.key === ' ' || e.key === 'ArrowUp') && !player.jumping && player.y === groundY) {
-				player.vy = -20;
+			if ((e.key === ' ' || e.key === 'ArrowUp') && !player.jumping && player.y + player.height === groundY + 30) {
+				player.vy = -25;
+				player.jumping = true;
+			}
+		});
+
+		// Permite pular ao clicar na tela
+		document.addEventListener('click', function() {
+			if (!player.jumping && player.y + player.height === groundY + 30) {
+				player.vy = -25;
 				player.jumping = true;
 			}
 		});
